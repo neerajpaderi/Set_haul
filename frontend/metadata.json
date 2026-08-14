@@ -1,0 +1,6 @@
+{
+  "name": "Transport Logistics & Driver Shipment Hub",
+  "description": "Real-time shipment tracking, driver issue logging, load acceptance, shipment history, and driver profile management for transport logistics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
