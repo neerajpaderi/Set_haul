@@ -1,3 +1,18 @@
 {
-  "targets": {}
+  "targets": {
+    "sethaul": {
+      "resources": {
+        "runtimes": {
+          "SetHaul": {
+            "runtimeId": "SetHaul_SetHaul-8txCH8Ho1P",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:336246706500:runtime/SetHaul_SetHaul-8txCH8Ho1P",
+            "roleArn": "arn:aws:iam::336246706500:role/AgentCore-SetHaul-sethaul-ApplicationAgentSetHaulRu-cAALeA8gMHh6"
+          }
+        },
+        "stackName": "AgentCore-SetHaul-sethaul",
+        "identityKmsKeyArn": "arn:aws:kms:us-east-1:336246706500:key/e422a4c1-54a9-43a7-b294-45e37876a8d8",
+        "deployHash": "9d8b904405b961e7"
+      }
+    }
+  }
 }

@@ -7,10 +7,51 @@
     "agentcore:created-by": "agentcore-cli",
     "agentcore:project-name": "SetHaul"
   },
-  "runtimes": [],
+  "runtimes": [
+    {
+      "name": "SetHaul",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/SetHaul/",
+      "runtimeVersion": "PYTHON_3_14",
+      "envVars": [
+        {
+          "name": "REDIS_URL",
+          "value": "REPLACE_LOCALLY_DO_NOT_COMMIT"
+        },
+        {
+          "name": "SUPABASE_URL",
+          "value": "https://dozzkajjaguvtpgvyaot.supabase.co"
+        },
+        {
+          "name": "LANGSMITH_TRACING",
+          "value": "true"
+        },
+        {
+          "name": "LANGSMITH_API_KEY",
+          "value": "REPLACE_LOCALLY_DO_NOT_COMMIT"
+        },
+        {
+          "name": "LANGSMITH_PROJECT",
+          "value": "sethaul"
+        }
+      ],
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP"
+    }
+  ],
   "memories": [],
   "knowledgeBases": [],
-  "credentials": [],
+  "credentials": [
+    {
+      "authorizerType": "ApiKeyCredentialProvider",
+      "name": "sethaul_open_router_api_key"
+    },
+    {
+      "authorizerType": "ApiKeyCredentialProvider",
+      "name": "sethaul_supabase_api_key"
+    }
+  ],
   "evaluators": [],
   "onlineEvalConfigs": [],
   "agentCoreGateways": [],

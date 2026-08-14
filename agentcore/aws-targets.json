@@ -1,1 +1,8 @@
-[]
+[
+    {
+        "name": "sethaul",
+        "description": "SetHaul deployment",
+        "account": "336246706500",
+        "region": "us-east-1"
+    }
+]

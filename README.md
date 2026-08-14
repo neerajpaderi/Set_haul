@@ -1,104 +1,94 @@
-# AgentCore Project
+# SetHaul
 
-This project was created with the [AgentCore CLI](https://github.com/aws/agentcore-cli).
+SetuHaul's driver exception & dock slot coordination agent — a conversational assistant that
+truck drivers message about delivery delays, ETAs, and dock appointment booking. Built on
+LangChain/LangGraph, deployed to Amazon Bedrock AgentCore Runtime, backed by Supabase (Postgres).
+
+## Architecture
+
+The LLM is a conversational layer only — it never decides slot availability, priority, or
+double-booking outcomes. Those are enforced by atomic Postgres RPC functions:
+
+- `hold_slot_atomic` — reserve a slot, fails with `conflict` if already held/booked
+- `confirm_slot_atomic` — commit a held slot, verifying the hold is still valid and unexpired
+- `release_hold_atomic` — release a hold early (e.g. driver changes their mind)
+
+All writes go through pydantic-validated tool inputs ([schema.py](app/SetHaul/schema.py)). Every
+driver/assistant message is persisted to `chat_messages` so a driver can return later and ask
+"what's my status".
+
+**Run `migration_v2.sql` in Supabase before running the agent** — the RPC functions and tables it
+depends on must exist first.
 
 ## Project Structure
 
 ```
-my-project/
-├── AGENTS.md               # AI coding assistant context
+SetHaul/
+├── AGENTS.md                    # AI coding assistant context (AgentCore schema reference)
 ├── agentcore/
-│   ├── agentcore.json      # Project config (agents, memories, credentials, gateways, evaluators)
-│   ├── aws-targets.json    # Deployment targets (account + region)
-│   ├── .env.local          # Secrets — API keys (gitignored)
-│   ├── .llm-context/       # TypeScript type definitions for AI assistants
-│   │   ├── agentcore.ts    # AgentCoreProjectSpec types
-│   │   ├── aws-targets.ts  # Deployment target types
-│   │   └── mcp.ts          # Gateway and MCP tool types
-│   └── cdk/                # CDK infrastructure (@aws/agentcore-cdk)
-├── app/                    # Agent application code
-└── evaluators/             # Custom evaluator code (if any)
+│   ├── agentcore.json           # Runtime, env vars, and credential provider config
+│   ├── aws-targets.json         # Deployment target (AWS account + region)
+│   ├── .env.local               # Local secrets (gitignored)
+│   ├── .llm-context/            # TypeScript type defs for the agentcore.json schema
+│   └── cdk/                     # CDK infra (@aws/agentcore-cdk) — deploy via `agentcore deploy`
+└── app/SetHaul/                 # Agent application code
+    ├── main.py                  # BedrockAgentCoreApp entrypoint
+    ├── agentcore_app.py         # Maps AgentCore invoke payloads to the LangChain chain
+    ├── agent.py                 # Tools, system prompt, and the dispatch chain itself
+    ├── schema.py                # Pydantic models/enums for tool inputs and DB writes
+    ├── model/load.py            # Model client + AgentCore Identity API key resolution
+    ├── observability.py         # OTel metrics (messages loaded, response length)
+    └── mcp_client/              # MCP client helper (not currently wired into the agent)
 ```
 
-## Getting Started
+## Tools
 
-### Prerequisites
+| Tool | Purpose |
+| --- | --- |
+| `get_driver_shipment_details` | Look up a driver's active shipment |
+| `check_existing_open_exception` | Avoid duplicate exception rows on retries |
+| `record_exception` | Insert or update a driver-reported exception |
+| `record_eta_update` | Append a driver-declared ETA (additive audit trail) |
+| `check_slot_availability` | Only source of truth for feasible, available dock slots |
+| `hold_slot` / `confirm_slot` / `release_hold` | Atomic slot lifecycle via Postgres RPCs |
+| `get_appointment_status` | Current pending/confirmed appointment for a shipment |
+| `escalate_to_human` | Hand off when no feasible slot, contradictory info, or outside automated authority |
 
-- **Node.js** 20.x or later
-- **Python 3.10+** and **uv** for Python agents ([install uv](https://docs.astral.sh/uv/getting-started/installation/))
-- **AWS credentials** configured (`aws configure` or environment variables)
-- **Docker** (only for Container build agents)
+## Environment Variables
 
-### Development
+| Variable | Required | Description |
+| --- | --- | --- |
+| `SUPABASE_URL` | Yes | Supabase project URL |
+| `sethaul_supabase_api_key` (identity) / `SUPABASE_KEY` (local) | Yes | Supabase API key |
+| `sethaul_open_router_api_key` (identity) / `OPEN_ROUTER_API_KEY` (local) | Yes | OpenRouter API key (Gemini via OpenRouter) |
+| `REDIS_URL` | Yes | Redis connection string |
+| `LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT` | No | LangSmith tracing |
+| `LOCAL_DEV` | No | Set to `1` to read secrets from `.env.local` instead of AgentCore Identity |
 
-Run your agent locally:
+In deployed environments, API keys are resolved through AgentCore Identity credential providers
+(`sethaul_supabase_api_key`, `sethaul_open_router_api_key`) rather than plain env vars — see
+[model/load.py](app/SetHaul/model/load.py).
+
+## Development
 
 ```bash
-agentcore dev
+agentcore dev                                    # run locally with hot-reload
+agentcore invoke --dev "What can you do"         # invoke the local server
 ```
 
-### Deployment
-
-Deploy to AWS:
+Or run the chat loop directly for a quick manual test:
 
 ```bash
-agentcore deploy
+cd app/SetHaul
+python agent.py
 ```
 
-## Commands
+## Deployment
 
-| Command | Description |
-| --- | --- |
-| `agentcore create` | Create a new AgentCore project |
-| `agentcore add` | Add resources (agent, memory, credential, gateway, evaluator, policy) |
-| `agentcore remove` | Remove resources |
-| `agentcore dev` | Run agent locally with hot-reload |
-| `agentcore deploy` | Deploy to AWS via CDK |
-| `agentcore status` | Show deployment status |
-| `agentcore invoke` | Invoke agent (local or deployed) |
-| `agentcore logs` | View agent logs |
-| `agentcore traces` | View agent traces |
-| `agentcore eval` | Run evaluations |
-| `agentcore package` | Package agent artifacts |
-| `agentcore validate` | Validate configuration |
-| `agentcore pause` | Pause a deployed agent |
-| `agentcore resume` | Resume a paused agent |
-| `agentcore fetch` | Fetch remote resource definitions |
-| `agentcore import` | Import existing resources |
-| `agentcore update` | Check for CLI updates |
+```bash
+agentcore deploy    # synthesize CDK and deploy to AWS
+agentcore status    # check deployment status
+agentcore invoke    # invoke the deployed agent
+```
 
-## Configuration
-
-Edit the JSON files in `agentcore/` to configure your project. See `agentcore/.llm-context/` for type definitions and validation constraints.
-
-The project uses a **flat resource model** — agents, memories, credentials, gateways, evaluators, and policies are top-level arrays in `agentcore.json`. Resources are independent; agents discover memories and credentials at runtime via environment variables or SDK calls.
-
-## Resources
-
-| Resource | Purpose |
-| --- | --- |
-| Agent (runtime) | HTTP, MCP, or A2A agent deployed to AgentCore Runtime |
-| Memory | Persistent context storage with configurable strategies |
-| Credential | API key or OAuth credential providers |
-| Gateway | MCP gateway that routes tool calls to targets |
-| Gateway Target | Tool implementation (Lambda, MCP server, OpenAPI, Smithy, API Gateway) |
-| Evaluator | Custom LLM-as-a-Judge or code-based evaluation |
-| Online Eval Config | Continuous evaluation pipeline for deployed agents |
-| Policy | Cedar authorization policies for gateway tools |
-
-### Agent Types
-
-- **Template agents**: Created from framework templates (Strands, LangChain/LangGraph, GoogleADK, OpenAI Agents, Autogen)
-- **BYO agents**: Bring your own code with `agentcore add agent --type byo`
-- **Import agents**: Import existing Bedrock agents with `agentcore import`
-
-### Build Types
-
-- **CodeZip**: Python source packaged as a zip and deployed directly to AgentCore Runtime
-- **Container**: Docker image built via CodeBuild (ARM64), pushed to ECR, and deployed to AgentCore Runtime
-
-## Documentation
-
-- [AgentCore CLI](https://github.com/aws/agentcore-cli)
-- [AgentCore CDK Constructs](https://github.com/aws/agentcore-l3-cdk-constructs)
-- [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/)
+See [AGENTS.md](AGENTS.md) for the full AgentCore schema reference and CLI command list.
