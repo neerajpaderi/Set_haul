@@ -8,14 +8,52 @@ import {
 } from '../types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Request to ${path} failed (${res.status})`);
+  const method = options?.method ?? 'GET';
+  const url = `${window.location.origin}${path}`;
+  const startedAt = performance.now();
+
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
+    });
+  } catch (networkErr: any) {
+    console.error(`[api] ${method} ${path} — network error (no response reached server)`, {
+      url,
+      durationMs: Math.round(performance.now() - startedAt),
+      error: networkErr?.message,
+    });
+    throw networkErr;
   }
+
+  const durationMs = Math.round(performance.now() - startedAt);
+
+  if (!res.ok) {
+    // Capture as text first — a Vercel platform 404 (no matching function/static
+    // file) returns an HTML error page, not JSON, and body.json() would throw
+    // and mask the real status/response in the console.
+    const rawBody = await res.text();
+    let parsedBody: any = {};
+    try {
+      parsedBody = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      // Non-JSON response — likely a platform-level error page rather than our API.
+    }
+    console.error(`[api] ${method} ${path} — request failed`, {
+      url,
+      status: res.status,
+      statusText: res.statusText,
+      durationMs,
+      contentType: res.headers.get('content-type'),
+      server: res.headers.get('server'),
+      vercelId: res.headers.get('x-vercel-id'),
+      bodyPreview: rawBody.slice(0, 300),
+    });
+    throw new Error(parsedBody.error || `Request to ${path} failed (${res.status})`);
+  }
+
+  console.log(`[api] ${method} ${path} — ${res.status} (${durationMs}ms)`);
   return res.json();
 }
 

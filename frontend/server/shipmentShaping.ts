@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseClient.js';
 
 // Confirmed real Postgres enum values (via PostgREST OpenAPI schema) — keep
 // in sync with src/types.ts.

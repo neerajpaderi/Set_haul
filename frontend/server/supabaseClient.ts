@@ -7,6 +7,8 @@ if (!url || !key) {
   throw new Error('SUPABASE_URL and SUPABASE_KEY must be set (server-side only, see .env.example).');
 }
 
+console.log(`[server] Supabase client initialized for ${url}`);
+
 // Service-role client — bypasses RLS. Must only ever be imported from
 // server-side modules (server.ts, server/*), never from src/.
 export const supabase = createClient(url, key, {

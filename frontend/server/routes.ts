@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import { supabase } from './supabaseClient';
-import { buildShipmentView, SHIPMENT_STATUSES, EXCEPTION_TYPES } from './shipmentShaping';
+import { supabase } from './supabaseClient.js';
+import { buildShipmentView, SHIPMENT_STATUSES, EXCEPTION_TYPES } from './shipmentShaping.js';
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction) => {
