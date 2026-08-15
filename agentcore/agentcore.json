@@ -17,11 +17,11 @@
       "envVars": [
         {
           "name": "REDIS_URL",
-          "value": "REPLACE_LOCALLY_DO_NOT_COMMIT"
+          "value": "<REPLACE WITH YOUR URL>"
         },
         {
           "name": "SUPABASE_URL",
-          "value": "https://dozzkajjaguvtpgvyaot.supabase.co"
+          "value": "<REPLACE WITH YOUR URL>"
         },
         {
           "name": "LANGSMITH_TRACING",
@@ -29,7 +29,7 @@
         },
         {
           "name": "LANGSMITH_API_KEY",
-          "value": "REPLACE_LOCALLY_DO_NOT_COMMIT"
+          "value": "<REPLACE WITH YOUR KEY>"
         },
         {
           "name": "LANGSMITH_PROJECT",
