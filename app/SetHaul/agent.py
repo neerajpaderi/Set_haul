@@ -83,6 +83,14 @@ import redis
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
+from model.load import (
+    get_api_key,
+    IDENTITY_PROVIDER_NAME,
+    IDENTITY_ENV_VAR,
+    SUPABASE_IDENTITY_PROVIDER_NAME,
+    SUPABASE_IDENTITY_ENV_VAR,
+)
+
 from pydantic import BaseModel, Field
 from enum import Enum
 
@@ -181,9 +189,18 @@ def _log_ai_message(stage: str, response: AIMessage):
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-OPEN_ROUTER_API_KEY = os.getenv("OPEN_ROUTER_API_KEY")
+try:
+    SUPABASE_KEY = get_api_key(SUPABASE_IDENTITY_PROVIDER_NAME, SUPABASE_IDENTITY_ENV_VAR)
+except Exception as exc:
+    SUPABASE_KEY = None
+    log.error("Failed to resolve SUPABASE_KEY: %s", exc)
+
+try:
+    OPEN_ROUTER_API_KEY = get_api_key(IDENTITY_PROVIDER_NAME, IDENTITY_ENV_VAR)
+except Exception as exc:
+    OPEN_ROUTER_API_KEY = None
+    log.error("Failed to resolve OPEN_ROUTER_API_KEY: %s", exc)
 
 OPENROUTER_MODEL = os.getenv(
     "OPENROUTER_MODEL",

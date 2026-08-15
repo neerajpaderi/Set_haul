@@ -5,6 +5,9 @@ from bedrock_agentcore.identity.auth import requires_api_key
 IDENTITY_PROVIDER_NAME = "sethaul_open_router_api_key"
 IDENTITY_ENV_VAR = "OPEN_ROUTER_API_KEY"
 
+SUPABASE_IDENTITY_PROVIDER_NAME = "sethaul_supabase_api_key"
+SUPABASE_IDENTITY_ENV_VAR = "SUPABASE_KEY"
+
 
 def _fetch_identity_api_key(provider_name: str) -> str:
     @requires_api_key(provider_name=provider_name)

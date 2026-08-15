@@ -17,6 +17,8 @@ cdk/node_modules/
 
 # Environment / secrets — NEVER commit real keys
 .env
+.cli
+.llm-context
 .env.local
 
 # Python
